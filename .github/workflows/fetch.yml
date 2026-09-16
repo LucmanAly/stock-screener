@@ -1,0 +1,107 @@
+name: Nightly fetch
+
+on:
+  # GitHub cron is UTC only and does not understand DST, so 18:00 in
+  # America/New_York is 22:00 UTC in summer (EDT) and 23:00 UTC in winter (EST).
+  # Both are scheduled and the "Gate" step below discards the wrong one, so the
+  # job lands at 18:00 local all year rather than drifting by an hour.
+  schedule:
+    - cron: "0 22 * * *"   # 18:00 EDT
+    - cron: "0 23 * * *"   # 18:00 EST
+  workflow_dispatch:        # manual trigger, works from the GitHub mobile app
+
+permissions:
+  contents: write           # needed to push data.csv back to the repo
+
+concurrency:
+  group: nightly-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Gate on the 18:00 America/New_York slot
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Manual run (${{ github.event_name }}) - proceeding."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ=America/New_York date +%H)
+          echo "Current America/New_York hour: $hour"
+          if [ "$hour" = "18" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not the 18:00 local slot (DST twin) - skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # run_fetch.py owns the safety rules: it stages the CSV and only promotes
+      # it to data.csv when >= 400 tickers succeed, archiving the previous
+      # data.csv into history/ first. A non-zero exit means data.csv on disk is
+      # untouched, so the commit step below is skipped and yesterday's data
+      # stays in the repo.
+      - name: Fetch S&P 500 fundamentals
+        id: fetch
+        if: steps.gate.outputs.run == 'true'
+        run: python run_fetch.py --throttle 1.5 --max-retries 7
+
+      - name: Summarise run
+        if: always() && steps.gate.outputs.run == 'true'
+        run: |
+          echo "### Nightly fetch" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f fetch_summary.json ]; then
+            jq -r '"- **attempted**: \(.attempted)",
+                   "- **succeeded**: \(.succeeded)",
+                   "- **failed**: \(.failed)",
+                   "- **429 / rate limits**: \(.rate_limit_hits)"' \
+              fetch_summary.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- fetch_summary.json not produced" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload run log
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fetch-log-${{ github.run_number }}
+          path: |
+            logs/
+            fetch_summary.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Only reached when the fetch step succeeded, which already implies
+      # >= 400 tickers landed.
+      - name: Commit refreshed data
+        if: success() && steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.csv fields.md history/
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          rows=$(python -c "import csv,sys; print(sum(1 for _ in csv.reader(open('data.csv'))) - 1)")
+          git commit -m "Nightly data refresh: ${rows} tickers [skip ci]"
+          git push

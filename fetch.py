@@ -29,9 +29,21 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
 
-THROTTLE_SECONDS = 0.4
-MAX_ATTEMPTS = 5
-BACKOFF_SCHEDULE = [1, 2, 4, 8, 16]  # seconds, used on 429 / rate-limit errors
+DEFAULT_THROTTLE_SECONDS = 0.4
+# Retries AFTER the first attempt, so the default gives waits of 1,2,4,8,16s.
+DEFAULT_MAX_RETRIES = 5
+BACKOFF_CAP_SECONDS = 300
+
+# Overridden from the CLI in main(). Datacenter IPs (e.g. GitHub Actions
+# runners) get throttled harder by Yahoo than home connections, so CI passes
+# a larger --throttle and more --max-retries.
+THROTTLE_SECONDS = DEFAULT_THROTTLE_SECONDS
+MAX_RETRIES = DEFAULT_MAX_RETRIES
+
+
+def backoff_seconds(retry_index: int) -> int:
+    """Exponential backoff: 1, 2, 4, 8, 16, 32, 64 ... capped."""
+    return min(2 ** retry_index, BACKOFF_CAP_SECONDS)
 
 # Columns the screener depends on. Guaranteed to exist in data.csv even when
 # yfinance omits them, and written first so the CSV is readable by eye.
@@ -144,7 +156,8 @@ def fetch_info(ticker: str) -> dict:
     """Fetch .info for one ticker, with exponential backoff on 429."""
     global RATE_LIMIT_HITS
     last_exc: Exception | None = None
-    for attempt in range(MAX_ATTEMPTS):
+    total_attempts = MAX_RETRIES + 1
+    for attempt in range(total_attempts):
         try:
             info = yf.Ticker(ticker).info
             if not isinstance(info, dict) or not info:
@@ -152,23 +165,23 @@ def fetch_info(ticker: str) -> dict:
             return info
         except Exception as exc:  # noqa: BLE001 - yfinance raises a wide variety
             last_exc = exc
-            if attempt == MAX_ATTEMPTS - 1:
+            if attempt == total_attempts - 1:
                 break
             if is_rate_limited(exc):
                 RATE_LIMIT_HITS += 1
-                wait = BACKOFF_SCHEDULE[attempt]
+                wait = backoff_seconds(attempt)
                 log.warning(
                     "%s: rate limited (attempt %d/%d), backing off %ds",
-                    ticker, attempt + 1, MAX_ATTEMPTS, wait,
+                    ticker, attempt + 1, total_attempts, wait,
                 )
                 time.sleep(wait)
             else:
                 log.warning(
                     "%s: %s (attempt %d/%d), retrying in 1s",
-                    ticker, exc, attempt + 1, MAX_ATTEMPTS,
+                    ticker, exc, attempt + 1, total_attempts,
                 )
                 time.sleep(1)
-    raise RuntimeError(f"{ticker}: failed after {MAX_ATTEMPTS} attempts: {last_exc}")
+    raise RuntimeError(f"{ticker}: failed after {total_attempts} attempts: {last_exc}")
 
 
 def build_record(meta: dict, info: dict) -> dict:
@@ -276,13 +289,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fields", default="fields.md", help="field inventory path (default: fields.md)")
     parser.add_argument("--summary-json", default=None,
                         help="write a machine-readable run summary to this path")
+    parser.add_argument("--throttle", type=float, default=DEFAULT_THROTTLE_SECONDS,
+                        help=f"seconds to sleep between tickers (default: {DEFAULT_THROTTLE_SECONDS})")
+    parser.add_argument("--max-retries", type=int, default=DEFAULT_MAX_RETRIES,
+                        help=f"retries after the first attempt, backing off 1,2,4,8... "
+                             f"(default: {DEFAULT_MAX_RETRIES})")
     args = parser.parse_args(argv)
+
+    global THROTTLE_SECONDS, MAX_RETRIES
+    THROTTLE_SECONDS = args.throttle
+    MAX_RETRIES = args.max_retries
 
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)-7s %(message)s",
         datefmt="%H:%M:%S",
     )
+    log.info("throttle=%.2fs  max_retries=%d (backoff %s)",
+             THROTTLE_SECONDS, MAX_RETRIES,
+             ",".join(f"{backoff_seconds(i)}s" for i in range(MAX_RETRIES)) or "none")
 
     base = Path(__file__).resolve().parent
     cache_dir = Path(args.cache_dir)

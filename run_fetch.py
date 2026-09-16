@@ -25,15 +25,21 @@ import sys
 import traceback
 from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 BASE = Path(__file__).resolve().parent
 
 # Absolute path to the venv interpreter - the #1 cause of silent scheduler failure.
-VENV_PY = (
+_VENV_PY = (
     BASE / "venv" / "Scripts" / "python.exe"
     if os.name == "nt"
     else BASE / "venv" / "bin" / "python"
 )
+# CI installs dependencies into the job's own Python rather than a ./venv, so
+# fall back to the interpreter running this script - which by definition works.
+VENV_PY = _VENV_PY if _VENV_PY.exists() else Path(sys.executable)
 
 FETCH = BASE / "fetch.py"
 DATA = BASE / "data.csv"
@@ -93,16 +99,32 @@ def rotate_history(today: datetime) -> list[str]:
     return removed
 
 
-def archive_current_data() -> Path | None:
-    """Copy the existing data.csv into history/, named for the data's own vintage.
+MARKET_TZ = ZoneInfo("America/New_York")
 
-    Named by data.csv's modification date, not today's: the file being archived
-    holds the PREVIOUS run's data, so stamping it with today's date would
-    mislabel yesterday's numbers as today's.
+
+def data_vintage(path: Path) -> datetime:
+    """The date the data in `path` actually describes.
+
+    Read from the fetched_at column and expressed in market time, NOT from the
+    file's mtime: a CI checkout stamps every file with the checkout time, which
+    would label yesterday's numbers as today's and corrupt score-drift history.
+    Falls back to mtime only if fetched_at cannot be read.
     """
+    try:
+        stamps = pd.read_csv(path, usecols=["fetched_at"])["fetched_at"]
+        latest = pd.to_datetime(stamps, format="ISO8601", utc=True).max()
+        if pd.notna(latest):
+            return latest.tz_convert(MARKET_TZ)
+    except Exception:  # noqa: BLE001 - any parse problem falls back to mtime
+        pass
+    return datetime.fromtimestamp(path.stat().st_mtime)
+
+
+def archive_current_data() -> Path | None:
+    """Copy the existing data.csv into history/, named for the data's own vintage."""
     if not DATA.exists():
         return None
-    vintage = datetime.fromtimestamp(DATA.stat().st_mtime)
+    vintage = data_vintage(DATA)
     dest = HISTORY_DIR / f"data_{vintage:%Y%m%d}.csv"
     shutil.copy2(DATA, dest)
     return dest
@@ -129,6 +151,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=None, help="pass --limit through to fetch.py")
     parser.add_argument("--min-success", type=int, default=MIN_SUCCESS,
                         help=f"fail the run below this many tickers (default: {MIN_SUCCESS})")
+    parser.add_argument("--throttle", type=float, default=None,
+                        help="pass --throttle through to fetch.py (CI uses a larger value)")
+    parser.add_argument("--max-retries", type=int, default=None,
+                        help="pass --max-retries through to fetch.py")
     args = parser.parse_args(argv)
 
     for d in (LOG_DIR, HISTORY_DIR, CACHE_DIR):
@@ -176,6 +202,10 @@ def main(argv: list[str] | None = None) -> int:
             ]
             if args.limit is not None:
                 cmd += ["--limit", str(args.limit)]
+            if args.throttle is not None:
+                cmd += ["--throttle", str(args.throttle)]
+            if args.max_retries is not None:
+                cmd += ["--max-retries", str(args.max_retries)]
             say(f"command        {' '.join(cmd)}")
             say("-" * 72)
 
