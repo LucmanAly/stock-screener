@@ -46,7 +46,9 @@ jobs:
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.run == 'true'
         with:
-          python-version: "3.11"
+          # 3.12 is the floor, not a preference: numpy==2.5.3 in requirements.txt
+          # declares requires-python >=3.12, so a 3.11 runner cannot resolve it.
+          python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
