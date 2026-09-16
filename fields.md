@@ -2,7 +2,7 @@
 
 Rows: **503**  
 Columns: **198**  
-Generated: 2026-09-16T01:16:09.404005+00:00
+Generated: 2026-09-16T02:24:16.215881+00:00
 
 | # | column | non-null | coverage | dtype | example |
 | --: | --- | --: | --: | --- | --- |
@@ -10,10 +10,10 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 2 | `sector` | 503 | 100.0% | str | Healthcare |
 | 3 | `industry` | 502 | 99.8% | str | Diagnostics & Research |
 | 4 | `marketCap` | 502 | 99.8% | float64 | 42371006464.0 |
-| 5 | `trailingPE` | 477 | 94.8% | float64 | 29.69763 |
+| 5 | `trailingPE` | 477 | 94.8% | float64 | 29.009655 |
 | 6 | `forwardPE` | 503 | 100.0% | float64 | 22.238008 |
 | 7 | `priceToBook` | 498 | 99.0% | float64 | 5.754605 |
-| 8 | `enterpriseToEbitda` | 471 | 93.6% | float64 | 21.047 |
+| 8 | `enterpriseToEbitda` | 471 | 93.6% | float64 | 21.517 |
 | 9 | `freeCashflow` | 470 | 93.4% | float64 | 1060374976.0 |
 | 10 | `operatingMargins` | 502 | 99.8% | float64 | 0.25559 |
 | 11 | `profitMargins` | 502 | 99.8% | float64 | 0.19533001 |
@@ -26,8 +26,8 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 18 | `currentPrice` | 503 | 100.0% | float64 | 150.27 |
 | 19 | `targetMeanPrice` | 499 | 99.2% | float64 | 174.95238 |
 | 20 | `numberOfAnalystOpinions` | 499 | 99.2% | float64 | 21.0 |
-| 21 | `52WeekChange` | 502 | 99.8% | float64 | 0.15417874 |
-| 22 | `SandP52WeekChange` | 502 | 99.8% | float64 | 0.15336108 |
+| 21 | `52WeekChange` | 502 | 99.8% | float64 | 0.15845954 |
+| 22 | `SandP52WeekChange` | 502 | 99.8% | float64 | 0.15448117 |
 | 23 | `address1` | 502 | 99.8% | str | 5301 Stevens Creek Boulevard |
 | 24 | `address2` | 126 | 25.0% | str | Ground Floor 100 Pitts Bay Road |
 | 25 | `allTimeHigh` | 503 | 100.0% | float64 | 179.57 |
@@ -37,8 +37,8 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 29 | `auditRisk` | 495 | 98.4% | float64 | 8.0 |
 | 30 | `averageAnalystRating` | 446 | 88.7% | str | 1.7 - Buy |
 | 31 | `averageDailyVolume10Day` | 503 | 100.0% | int64 | 2109360 |
-| 32 | `averageDailyVolume3Month` | 503 | 100.0% | int64 | 2192904 |
-| 33 | `averageVolume` | 503 | 100.0% | int64 | 2192904 |
+| 32 | `averageDailyVolume3Month` | 503 | 100.0% | int64 | 2190254 |
+| 33 | `averageVolume` | 503 | 100.0% | int64 | 2190254 |
 | 34 | `averageVolume10days` | 503 | 100.0% | int64 | 2109360 |
 | 35 | `bid` | 503 | 100.0% | float64 | 150.2 |
 | 36 | `bidSize` | 503 | 100.0% | int64 | 200 |
@@ -69,11 +69,11 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 61 | `earningsTimestampStart` | 503 | 100.0% | int64 | 1795636800 |
 | 62 | `ebitda` | 472 | 93.8% | float64 | 2080000000.0 |
 | 63 | `ebitdaMargins` | 502 | 99.8% | float64 | 0.28215 |
-| 64 | `enterpriseToRevenue` | 500 | 99.4% | float64 | 5.938 |
-| 65 | `enterpriseValue` | 500 | 99.4% | float64 | 43777155072.0 |
+| 64 | `enterpriseToRevenue` | 500 | 99.4% | float64 | 6.071 |
+| 65 | `enterpriseValue` | 500 | 99.4% | float64 | 44755447808.0 |
 | 66 | `epsCurrentYear` | 497 | 98.8% | float64 | 6.20196 |
 | 67 | `epsForward` | 503 | 100.0% | float64 | 6.75735 |
-| 68 | `epsTrailingTwelveMonths` | 503 | 100.0% | float64 | 5.06 |
+| 68 | `epsTrailingTwelveMonths` | 503 | 100.0% | float64 | 5.18 |
 | 69 | `esgPopulated` | 503 | 100.0% | bool | False |
 | 70 | `exDividendDate` | 422 | 83.9% | float64 | 1782777600.0 |
 | 71 | `exchange` | 503 | 100.0% | str | NYQ |
@@ -86,7 +86,7 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 78 | `fiftyDayAverage` | 503 | 100.0% | float64 | 143.5834 |
 | 79 | `fiftyDayAverageChange` | 503 | 100.0% | float64 | 6.6865997 |
 | 80 | `fiftyDayAverageChangePercent` | 503 | 100.0% | float64 | 0.046569448 |
-| 81 | `fiftyTwoWeekChangePercent` | 503 | 100.0% | float64 | 15.417873 |
+| 81 | `fiftyTwoWeekChangePercent` | 503 | 100.0% | float64 | 15.845955 |
 | 82 | `fiftyTwoWeekHighChange` | 503 | 100.0% | float64 | -13.479996 |
 | 83 | `fiftyTwoWeekHighChangePercent` | 503 | 100.0% | float64 | -0.082320586 |
 | 84 | `fiftyTwoWeekLow` | 503 | 100.0% | float64 | 108.35 |
@@ -150,7 +150,7 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 142 | `priceHint` | 503 | 100.0% | int64 | 2 |
 | 143 | `priceToSalesTrailing12Months` | 501 | 99.6% | float64 | 5.747559 |
 | 144 | `quickRatio` | 483 | 96.0% | float64 | 1.414 |
-| 145 | `quoteSourceName` | 500 | 99.4% | str | Delayed Quote |
+| 145 | `quoteSourceName` | 493 | 98.0% | str | Delayed Quote |
 | 146 | `quoteType` | 503 | 100.0% | str | EQUITY |
 | 147 | `recommendationKey` | 503 | 100.0% | str | buy |
 | 148 | `recommendationMean` | 446 | 88.7% | float64 | 1.73913 |
@@ -190,7 +190,7 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 182 | `tradeable` | 503 | 100.0% | bool | False |
 | 183 | `trailingAnnualDividendRate` | 503 | 100.0% | float64 | 1.013 |
 | 184 | `trailingAnnualDividendYield` | 503 | 100.0% | float64 | 0.0069005447 |
-| 185 | `trailingEps` | 502 | 99.8% | float64 | 5.06 |
+| 185 | `trailingEps` | 502 | 99.8% | float64 | 5.18 |
 | 186 | `trailingPegRatio` | 431 | 85.7% | float64 | 1.2122 |
 | 187 | `triggerable` | 503 | 100.0% | bool | True |
 | 188 | `twoHundredDayAverage` | 503 | 100.0% | float64 | 131.541 |
@@ -203,4 +203,4 @@ Generated: 2026-09-16T01:16:09.404005+00:00
 | 195 | `wiki_name` | 503 | 100.0% | str | Agilent Technologies |
 | 196 | `wiki_sector` | 503 | 100.0% | str | Health Care |
 | 197 | `wiki_industry` | 503 | 100.0% | str | Life Sciences Tools & Services |
-| 198 | `fetched_at` | 503 | 100.0% | str | 2026-09-16T01:10:27.406325+00:00 |
+| 198 | `fetched_at` | 503 | 100.0% | str | 2026-09-16T02:09:49.828051+00:00 |
