@@ -28,3 +28,6 @@ data.new.csv
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Screen output, regenerated on every run
+screen_results.csv
