@@ -1,0 +1,30 @@
+# Virtualenv - recreate with: python -m venv venv && pip install -r requirements.txt
+venv/
+
+# Per-ticker resume cache, rebuilt on every run
+cache/
+
+# Run logs, rotated to the last 14
+logs/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Transient run artifacts from run_fetch.py
+data.staging.csv
+fields.staging.md
+fetch_summary.json
+
+# Emitted only when data.csv is locked by another process (e.g. Excel)
+data.new.csv
+
+# Machine-specific local tooling config
+.claude/settings.local.json
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store
